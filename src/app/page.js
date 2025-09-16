@@ -1,103 +1,267 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Box } from '@mui/material';
+import AudioControl from './components/AudioControl';
+import ProfilePhoto from './components/ProfilePhoto';
+import HeroContent from './components/HeroContent';
+import ProjectsSection from './components/ProjectsSection';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import { Fab, Zoom } from '@mui/material';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // Generate random left positions for beams on client only
+  const [beamPositions, setBeamPositions] = useState(null);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const vw = window.innerWidth;
+      const min = vw * 0.10;
+      const max = vw * 0.80;
+      const beamCount = 5;
+      const minGap = vw * 0.10;
+      let positions = [];
+      for (let i = 0; i < beamCount; i++) {
+        let pos;
+        let tries = 0;
+        do {
+          pos = Math.floor(Math.random() * (max - min)) + min;
+          tries++;
+        } while (positions.some(p => Math.abs(p - pos) < minGap) && tries < 10);
+        positions.push(pos);
+      }
+      setBeamPositions(positions);
+    }
+  }, []);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+  // Add scroll handler for smooth scroll to projects
+  const handleScrollToProjects = () => {
+    const section = document.getElementById('projects');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const [showUpArrow, setShowUpArrow] = useState(false);
+  const scrollContainerRef = useRef(null);
+
+  // Show up arrow when not at the top
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollContainerRef.current) {
+        setShowUpArrow(scrollContainerRef.current.scrollTop > 50);
+      }
+    };
+    const ref = scrollContainerRef.current;
+    if (ref) {
+      ref.addEventListener('scroll', handleScroll);
+      // Prevent mouse wheel scroll
+      const preventWheel = (e) => {
+        e.preventDefault();
+      };
+      ref.addEventListener('wheel', preventWheel, { passive: false });
+      return () => {
+        ref.removeEventListener('scroll', handleScroll);
+        ref.removeEventListener('wheel', preventWheel);
+      };
+    }
+    return () => {};
+  }, []);
+
+  const handleScrollToTop = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        minWidth: '100vw',
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+      }}
+    >
+      {/* Audio Control */}
+      <AudioControl />
+
+      {/* Main scrollable sections */}
+      <Box
+        ref={scrollContainerRef}
+        sx={{
+          height: '100vh',
+          width: '100vw',
+          overflowY: 'auto',
+          scrollSnapType: 'y mandatory',
+          // Hide scrollbar for all browsers
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE 10+
+          '&::-webkit-scrollbar': { display: 'none' }, // Chrome/Safari
+        }}
+      >
+      {/* Hero/Profile Section */}
+      <Box
+        sx={{
+          height: '100vh',
+          width: '100vw',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%)',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          overflow: 'hidden',
+            scrollSnapAlign: 'start',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `
+              radial-gradient(circle at 20% 80%, rgba(206, 17, 38, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(0, 122, 61, 0.05) 0%, transparent 50%),
+              linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%)
+            `,
+            zIndex: 0,
+          },
+        }}
+      >
+        {/* Animated green and red beams background */}
+        {beamPositions && beamPositions.map((leftPx, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: 'absolute',
+              bottom: '-100vh',
+              left: leftPx,
+              width: { xs: 12, sm: 18, md: 22 },
+              height: { xs: '60vh', sm: '70vh', md: '80vh' },
+              background:
+                i % 2 === 0
+                  ? 'linear-gradient(180deg, rgba(0,255,128,0.18) 0%, rgba(0,255,128,0.06) 100%)'
+                  : 'linear-gradient(180deg, rgba(206,17,38,0.18) 0%, rgba(206,17,38,0.06) 100%)',
+              filter: 'blur(8px)',
+              borderRadius: 8,
+              zIndex: 0,
+              opacity: 1,
+              animation: `beamUp 5s linear ${i * 1.2}s infinite`,
+              '@keyframes beamUp': {
+                '0%': { transform: 'translateY(0)', opacity: 1 },
+                '80%': { opacity: 1 },
+                '100%': { transform: 'translateY(-120vh)', opacity: 0 },
+              },
+            }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        ))}
+        {/* Animated background elements */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '10%',
+            left: '5%',
+            width: 200,
+            height: 200,
+            borderRadius: '50%',
+            background: 'linear-gradient(45deg, rgba(206, 17, 38, 0.03), rgba(0, 122, 61, 0.03))',
+            animation: 'float 6s ease-in-out infinite',
+            zIndex: 0,
+            '@keyframes float': {
+              '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+              '50%': { transform: 'translateY(-20px) rotate(180deg)' },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '20%',
+            right: '10%',
+            width: 150,
+            height: 150,
+            borderRadius: '50%',
+            background: 'linear-gradient(45deg, rgba(0, 122, 61, 0.03), rgba(206, 17, 38, 0.03))',
+            animation: 'float 8s ease-in-out infinite reverse',
+            zIndex: 0,
+          }}
+        />
+        {/* Profile Photo on the far left */}
+        <Box
+          sx={{
+            height: '100%',
+            width: { xs: '60vw', sm: '44vw', md: '36vw', lg: '32vw', xl: '28vw' },
+            maxWidth: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            zIndex: 1,
+            pl: { xs: 2, sm: 4, md: 6 },
+            pr: { xs: 1, sm: 2, md: 4 },
+            animation: 'slideInLeft 1s ease-out',
+            '@keyframes slideInLeft': {
+              '0%': { opacity: 0, transform: 'translateX(-50px)' },
+              '100%': { opacity: 1, transform: 'translateX(0)' },
+            },
+          }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <ProfilePhoto />
+        </Box>
+        {/* Hero Content in the center/right */}
+        <Box
+          sx={{
+            flex: 1,
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1,
+            pl: { xs: 2, sm: 4, md: 6 },
+            pr: { xs: 3, sm: 6, md: 10 },
+            minWidth: 0,
+            animation: 'slideInRight 1s ease-out 0.3s both',
+            '@keyframes slideInRight': {
+              '0%': { opacity: 0, transform: 'translateX(50px)' },
+              '100%': { opacity: 1, transform: 'translateX(0)' },
+            },
+          }}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <HeroContent onViewWork={handleScrollToProjects} />
+          </Box>
+        </Box>
+        {/* Projects Section */}
+        <Box sx={{ scrollSnapAlign: 'start' }}>
+          <ProjectsSection />
+        </Box>
+      </Box>
+      {/* Up Arrow Button */}
+      <Zoom in={showUpArrow}>
+        <Fab
+          color="primary"
+          size="medium"
+          onClick={handleScrollToTop}
+          sx={{
+            position: 'fixed',
+            bottom: 32,
+            right: 32,
+            zIndex: 1200,
+            boxShadow: '0 4px 16px rgba(206, 17, 38, 0.18)',
+            backgroundColor: '#CE1126',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#a50e1e',
+            },
+            transition: 'all 0.22s ease',
+          }}
+          aria-label="Scroll to top"
+        >
+          <KeyboardArrowUpIcon />
+        </Fab>
+      </Zoom>
+    </Box>
   );
 }
