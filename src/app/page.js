@@ -6,7 +6,9 @@ import AudioControl from './components/AudioControl';
 import ProfilePhoto from './components/ProfilePhoto';
 import HeroContent from './components/HeroContent';
 import ProjectsSection from './components/ProjectsSection';
+import SkillsSection from './components/SkillsSection';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { Fab, Zoom } from '@mui/material';
 
 export default function Home() {
@@ -33,6 +35,14 @@ export default function Home() {
     }
   }, []);
 
+  // Add scroll handler for smooth scroll to skills
+  const handleScrollToSkills = () => {
+    const section = document.getElementById('skills');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // Add scroll handler for smooth scroll to projects
   const handleScrollToProjects = () => {
     const section = document.getElementById('projects');
@@ -42,18 +52,28 @@ export default function Home() {
   };
 
   const [showUpArrow, setShowUpArrow] = useState(false);
+  const [showDownArrow, setShowDownArrow] = useState(true);
   const scrollContainerRef = useRef(null);
 
-  // Show up arrow when not at the top
+  // Show up arrow when not at the top, down arrow when not at the bottom
   useEffect(() => {
     const handleScroll = () => {
       if (scrollContainerRef.current) {
-        setShowUpArrow(scrollContainerRef.current.scrollTop > 50);
+        const container = scrollContainerRef.current;
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+        
+        setShowUpArrow(scrollTop > 50);
+        setShowDownArrow(!isAtBottom);
       }
     };
     const ref = scrollContainerRef.current;
     if (ref) {
       ref.addEventListener('scroll', handleScroll);
+      // Initial check
+      handleScroll();
       // Prevent mouse wheel scroll
       const preventWheel = (e) => {
         e.preventDefault();
@@ -67,9 +87,62 @@ export default function Home() {
     return () => {};
   }, []);
 
-  const handleScrollToTop = () => {
+  const handleScrollToPrevious = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      const container = scrollContainerRef.current;
+      const scrollTop = container.scrollTop;
+      
+      // Determine which section we're in and scroll to the previous one
+      const skillsSection = document.getElementById('skills');
+      const projectsSection = document.getElementById('projects');
+      
+      if (skillsSection && projectsSection) {
+        const skillsTop = skillsSection.offsetTop;
+        const projectsTop = projectsSection.offsetTop;
+        
+        // If we're in projects section, go to skills
+        if (scrollTop >= projectsTop - 100) {
+          handleScrollToSkills();
+        }
+        // If we're in skills section, go to hero (top)
+        else if (scrollTop >= skillsTop - 100) {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        // If we're at hero or before, just scroll to top
+        else {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    }
+  };
+
+  const handleScrollToNext = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollTop = container.scrollTop;
+      const viewportHeight = container.clientHeight;
+      
+      // Determine which section we're in and scroll to the next one
+      const skillsSection = document.getElementById('skills');
+      const projectsSection = document.getElementById('projects');
+      
+      if (skillsSection && projectsSection) {
+        const skillsTop = skillsSection.offsetTop;
+        const projectsTop = projectsSection.offsetTop;
+        
+        // If we're in hero section (before skills), go to skills
+        if (scrollTop < skillsTop - 100) {
+          handleScrollToSkills();
+        }
+        // If we're in skills section, go to projects
+        else if (scrollTop >= skillsTop - 100 && scrollTop < projectsTop - 100) {
+          handleScrollToProjects();
+        }
+        // If we're at projects or beyond, just scroll down by viewport
+        else {
+          container.scrollBy({ top: viewportHeight, behavior: 'smooth' });
+        }
+      }
     }
   };
 
@@ -230,23 +303,51 @@ export default function Home() {
             },
           }}
         >
-            <HeroContent onViewWork={handleScrollToProjects} />
+            <HeroContent onViewWork={handleScrollToSkills} />
           </Box>
+        </Box>
+        {/* Skills Section */}
+        <Box sx={{ scrollSnapAlign: 'start' }}>
+          <SkillsSection />
         </Box>
         {/* Projects Section */}
         <Box sx={{ scrollSnapAlign: 'start' }}>
           <ProjectsSection />
         </Box>
       </Box>
+      {/* Down Arrow Button */}
+      <Zoom in={showDownArrow}>
+        <Fab
+          color="primary"
+          size="medium"
+          onClick={handleScrollToNext}
+          sx={{
+            position: 'fixed',
+            bottom: 32,
+            right: 32,
+            zIndex: 1200,
+            boxShadow: '0 4px 16px rgba(206, 17, 38, 0.18)',
+            backgroundColor: '#CE1126',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#a50e1e',
+            },
+            transition: 'all 0.22s ease',
+          }}
+          aria-label="Scroll to next section"
+        >
+          <KeyboardArrowDownIcon />
+        </Fab>
+      </Zoom>
       {/* Up Arrow Button */}
       <Zoom in={showUpArrow}>
         <Fab
           color="primary"
           size="medium"
-          onClick={handleScrollToTop}
+          onClick={handleScrollToPrevious}
           sx={{
             position: 'fixed',
-            bottom: 32,
+            bottom: 100,
             right: 32,
             zIndex: 1200,
             boxShadow: '0 4px 16px rgba(206, 17, 38, 0.18)',
